@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 620" font-family="Consolas, 'Courier New', monospace" font-size="12.5">
+  <defs>
+    <marker id="arrowF" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#0d6efd"/></marker>
+    <marker id="arrowG" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#198754"/></marker>
+    <marker id="arrowA" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="#adb5bd"/></marker>
+  </defs>
+  <rect x="5" y="5" width="770" height="610" rx="10" fill="#f8f9fa" stroke="#dee2e6" stroke-width="1"/>
+
+  <!-- text_color root -->
+  <rect x="20" y="20" width="140" height="28" rx="4" fill="#0d6efd" stroke="none"/>
+  <text x="90" y="39" text-anchor="middle" fill="#fff" font-weight="bold">text_color</text>
+
+  <!-- candidate_text_color -->
+  <line x1="90" y1="48" x2="90" y2="62" stroke="#0d6efd" stroke-width="1.5"/>
+  <line x1="90" y1="62" x2="180" y2="62" stroke="#0d6efd" stroke-width="1.5" marker-end="url(#arrowF)"/>
+  <rect x="190" y="50" width="195" height="26" rx="4" fill="#e7f1ff" stroke="#0d6efd"/>
+  <text x="287" y="68" text-anchor="middle" fill="#0d6efd">candidate_text_color</text>
+
+  <!-- label_color -->
+  <line x1="287" y1="76" x2="287" y2="90" stroke="#0d6efd" stroke-width="1.5"/>
+  <line x1="287" y1="90" x2="360" y2="90" stroke="#0d6efd" stroke-width="1.5" marker-end="url(#arrowF)"/>
+  <rect x="370" y="78" width="260" height="26" rx="4" fill="#e7f1ff" stroke="#0d6efd"/>
+  <text x="500" y="96" text-anchor="middle" fill="#0d6efd">label_color</text>
+  <text x="640" y="96" fill="#6c757d" font-size="11">blend(cand_text, cand_back)</text>
+
+  <!-- comment_text_color -->
+  <line x1="500" y1="104" x2="500" y2="118" stroke="#0d6efd" stroke-width="1.5"/>
+  <line x1="500" y1="118" x2="540" y2="118" stroke="#0d6efd" stroke-width="1.5" marker-end="url(#arrowF)"/>
+  <rect x="550" y="106" width="190" height="26" rx="4" fill="#e7f1ff" stroke="#0d6efd"/>
+  <text x="645" y="124" text-anchor="middle" fill="#0d6efd">comment_text_color</text>
+
+  <!-- hilited_text_color -->
+  <line x1="90" y1="62" x2="90" y2="165" stroke="#0d6efd" stroke-width="1.5"/>
+  <line x1="90" y1="165" x2="180" y2="165" stroke="#0d6efd" stroke-width="1.5" marker-end="url(#arrowF)"/>
+  <rect x="190" y="153" width="185" height="26" rx="4" fill="#e7f1ff" stroke="#0d6efd"/>
+  <text x="282" y="171" text-anchor="middle" fill="#0d6efd">hilited_text_color</text>
+
+  <!-- hilited_candidate_text_color -->
+  <line x1="282" y1="179" x2="282" y2="198" stroke="#0d6efd" stroke-width="1.5"/>
+  <line x1="282" y1="198" x2="360" y2="198" stroke="#0d6efd" stroke-width="1.5" marker-end="url(#arrowF)"/>
+  <rect x="370" y="186" width="260" height="26" rx="4" fill="#e7f1ff" stroke="#0d6efd"/>
+  <text x="500" y="204" text-anchor="middle" fill="#0d6efd">hilited_candidate_text_color</text>
+
+  <!-- hilited_label_color -->
+  <line x1="500" y1="212" x2="500" y2="230" stroke="#0d6efd" stroke-width="1.5"/>
+  <line x1="500" y1="230" x2="540" y2="230" stroke="#0d6efd" stroke-width="1.5" marker-end="url(#arrowF)"/>
+  <rect x="550" y="218" width="200" height="26" rx="4" fill="#e7f1ff" stroke="#0d6efd"/>
+  <text x="650" y="236" text-anchor="middle" fill="#0d6efd">hilited_label_color</text>
+
+  <!-- hilited_comment_text_color -->
+  <line x1="650" y1="244" x2="650" y2="260" stroke="#0d6efd" stroke-width="1.5"/>
+  <line x1="650" y1="260" x2="680" y2="260" stroke="#0d6efd" stroke-width="1.5" marker-end="url(#arrowF)"/>
+  <text x="550" y="276" fill="#0d6efd">hilited_comment_text_color</text>
+
+  <!-- border_color -->
+  <line x1="90" y1="165" x2="90" y2="300" stroke="#0d6efd" stroke-width="1.5"/>
+  <line x1="90" y1="300" x2="180" y2="300" stroke="#0d6efd" stroke-width="1.5" marker-end="url(#arrowF)"/>
+  <rect x="190" y="288" width="140" height="26" rx="4" fill="#e7f1ff" stroke="#0d6efd"/>
+  <text x="260" y="306" text-anchor="middle" fill="#0d6efd">border_color</text>
+
+  <!-- back_color root -->
+  <rect x="20" y="340" width="140" height="28" rx="4" fill="#198754" stroke="none"/>
+  <text x="90" y="359" text-anchor="middle" fill="#fff" font-weight="bold">back_color</text>
+
+  <!-- hilited_back_color -->
+  <line x1="90" y1="368" x2="90" y2="390" stroke="#198754" stroke-width="1.5"/>
+  <line x1="90" y1="390" x2="180" y2="390" stroke="#198754" stroke-width="1.5" marker-end="url(#arrowG)"/>
+  <rect x="190" y="378" width="175" height="26" rx="4" fill="#d1e7dd" stroke="#198754"/>
+  <text x="277" y="396" text-anchor="middle" fill="#198754">hilited_back_color</text>
+
+  <!-- hilited_candidate_back_color -->
+  <line x1="277" y1="404" x2="277" y2="422" stroke="#198754" stroke-width="1.5"/>
+  <line x1="277" y1="422" x2="360" y2="422" stroke="#198754" stroke-width="1.5" marker-end="url(#arrowG)"/>
+  <rect x="370" y="410" width="260" height="26" rx="4" fill="#d1e7dd" stroke="#198754"/>
+  <text x="500" y="428" text-anchor="middle" fill="#198754">hilited_candidate_back_color</text>
+
+  <!-- 0x00000000 root -->
+  <rect x="20" y="460" width="200" height="28" rx="4" fill="#6c757d" stroke="none"/>
+  <text x="120" y="479" text-anchor="middle" fill="#fff" font-weight="bold">0x00000000（透明）</text>
+
+  <!-- transparent fallbacks -->
+  <g fill="#6c757d" font-size="12">
+    <line x1="120" y1="488" x2="120" y2="600" stroke="#adb5bd" stroke-width="1"/>
+    <line x1="120" y1="502" x2="180" y2="502" stroke="#adb5bd" stroke-width="1" marker-end="url(#arrowA)"/>
+    <text x="190" y="507">shadow_color</text>
+    <line x1="120" y1="522" x2="180" y2="522" stroke="#adb5bd" stroke-width="1" marker-end="url(#arrowA)"/>
+    <text x="190" y="527">candidate_back_color</text>
+    <line x1="120" y1="542" x2="180" y2="542" stroke="#adb5bd" stroke-width="1" marker-end="url(#arrowA)"/>
+    <text x="190" y="547">candidate_shadow_color / candidate_border_color</text>
+    <line x1="120" y1="562" x2="180" y2="562" stroke="#adb5bd" stroke-width="1" marker-end="url(#arrowA)"/>
+    <text x="190" y="567">hilited_shadow_color / hilited_candidate_shadow_color</text>
+    <line x1="120" y1="582" x2="180" y2="582" stroke="#adb5bd" stroke-width="1" marker-end="url(#arrowA)"/>
+    <text x="190" y="587">hilited_candidate_border_color / hilited_mark_color</text>
+    <line x1="120" y1="600" x2="180" y2="600" stroke="#adb5bd" stroke-width="1" marker-end="url(#arrowA)"/>
+    <text x="190" y="605">prevpage_color / nextpage_color</text>
+  </g>
+</svg>

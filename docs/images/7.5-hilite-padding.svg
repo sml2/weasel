@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 260" font-family="Consolas, 'Courier New', monospace" font-size="12">
+  <!-- 高亮色块 -->
+  <rect x="60" y="20" width="340" height="120" rx="8" fill="#f0e4d0" stroke="#c08000" stroke-width="1.5"/>
+  <text x="340" y="18" fill="#6c757d" font-size="10">round_corner ╮</text>
+
+  <!-- 文字区 -->
+  <rect x="120" y="50" width="220" height="36" rx="3" fill="#fff8" stroke="#ddd"/>
+  <text x="136" y="73" fill="#cc6600" font-size="14" font-weight="bold">1.</text>
+  <text x="172" y="73" fill="#c08000" font-size="15" font-weight="bold">你好</text>
+  <text x="230" y="73" fill="#999" font-size="13">nihao</text>
+
+  <!-- hilite_padding_x 左 -->
+  <line x1="60" y1="68" x2="120" y2="68" stroke="#dc3545" stroke-width="1.5"/>
+  <line x1="60" y1="58" x2="60" y2="78" stroke="#dc3545" stroke-width="1"/>
+  <line x1="120" y1="58" x2="120" y2="78" stroke="#dc3545" stroke-width="1"/>
+  <text x="68" y="96" fill="#dc3545" font-size="11">hilite_padding_x</text>
+
+  <!-- hilite_padding_x 右 -->
+  <line x1="340" y1="68" x2="400" y2="68" stroke="#dc3545" stroke-width="1.5"/>
+  <line x1="340" y1="58" x2="340" y2="78" stroke="#dc3545" stroke-width="1"/>
+  <line x1="400" y1="58" x2="400" y2="78" stroke="#dc3545" stroke-width="1"/>
+  <text x="348" y="96" fill="#dc3545" font-size="11">hilite_padding_x</text>
+
+  <!-- hilite_padding_y 上 -->
+  <line x1="420" y1="20" x2="420" y2="50" stroke="#0d6efd" stroke-width="1.5"/>
+  <line x1="414" y1="20" x2="426" y2="20" stroke="#0d6efd" stroke-width="1"/>
+  <line x1="414" y1="50" x2="426" y2="50" stroke="#0d6efd" stroke-width="1"/>
+  <text x="430" y="40" fill="#0d6efd" font-size="11">hilite_padding_y</text>
+
+  <!-- hilite_padding_y 下 -->
+  <line x1="420" y1="86" x2="420" y2="140" stroke="#0d6efd" stroke-width="1.5"/>
+  <line x1="414" y1="86" x2="426" y2="86" stroke="#0d6efd" stroke-width="1"/>
+  <line x1="414" y1="140" x2="426" y2="140" stroke="#0d6efd" stroke-width="1"/>
+  <text x="430" y="118" fill="#0d6efd" font-size="11">hilite_padding_y</text>
+
+  <!-- 说明文字 -->
+  <text x="60" y="174" fill="#495057" font-size="12">高亮色块 = 文字区域 + 四周 hilite_padding</text>
+  <line x1="60" y1="190" x2="460" y2="190" stroke="#dee2e6" stroke-width="1"/>
+  <text x="60" y="210" fill="#6c757d" font-size="12">圆角 = <tspan fill="#c08000">round_corner</tspan>（hilited_corner_radius）</text>
+  <text x="60" y="232" fill="#6c757d" font-size="12">窗口圆角 = <tspan fill="#495057">corner_radius</tspan>（round_corner_ex）</text>
+</svg>

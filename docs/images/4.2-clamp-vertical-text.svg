@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 224" font-family="Consolas, 'Courier New', monospace" font-size="13">
+  <rect x="10" y="10" width="700" height="204" rx="8" fill="#d1ecf1" stroke="#0dcaf0" stroke-width="1.5"/>
+  <text x="24" y="34" font-weight="bold" fill="#0c5460">竖排文字模式（vertical_text）</text>
+  <g fill="#212529">
+    <text x="30" y="60">规则 1：<tspan fill="#dc3545" font-weight="bold">spacing</tspan> ≥ hilite_padding_x × 2</text>
+    <text x="30" y="84">规则 2：<tspan fill="#dc3545" font-weight="bold">candidate_spacing</tspan> ≥ hilite_padding_x × 2</text>
+    <text x="30" y="108">规则 2b：若 vertical_text_with_wrap：</text>
+    <text x="95" y="130"><tspan fill="#dc3545" font-weight="bold">candidate_spacing</tspan> ≥ hilite_padding_y × 2</text>
+    <text x="30" y="152">规则 3：<tspan fill="#dc3545" font-weight="bold">hilite_spacing</tspan> ≥ hilite_padding_y <tspan fill="#6c757d">（仅 inline_preedit=false）</tspan></text>
+    <text x="30" y="176">规则 4：<tspan fill="#dc3545" font-weight="bold">|margin_x|</tspan> ≥ hilite_padding_x</text>
+    <text x="30" y="200">规则 5：<tspan fill="#dc3545" font-weight="bold">|margin_y|</tspan> ≥ hilite_padding_y</text>
+  </g>
+</svg>

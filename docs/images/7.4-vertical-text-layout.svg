@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 340" font-family="Consolas, 'Courier New', monospace" font-size="12">
+  <!-- 窗口外框 -->
+  <rect x="10" y="10" width="500" height="320" rx="6" fill="#ededed" stroke="#c3c3c3" stroke-width="2"/>
+
+  <!-- 三列候选 -->
+  <!-- 候选1（高亮） -->
+  <rect x="55" y="30" width="80" height="160" rx="4" fill="#f0e4d0" stroke="#c08000" stroke-width="1.5"/>
+  <text x="82" y="60" fill="#c08000" font-size="18" font-weight="bold" text-anchor="middle">你</text>
+  <text x="82" y="88" fill="#c08000" font-size="18" font-weight="bold" text-anchor="middle">好</text>
+  <text x="82" y="130" fill="#cc6600" font-size="13" text-anchor="middle">1.</text>
+  <text x="82" y="158" fill="#999" font-size="11" text-anchor="middle">nihao</text>
+
+  <!-- 候选2 -->
+  <rect x="185" y="30" width="80" height="160" rx="4" fill="none" stroke="#ddd"/>
+  <text x="225" y="60" fill="#808080" font-size="18" text-anchor="middle">拟</text>
+  <text x="225" y="88" fill="#808080" font-size="18" text-anchor="middle">好</text>
+  <text x="225" y="130" fill="#999" font-size="13" text-anchor="middle">2.</text>
+  <text x="225" y="158" fill="#999" font-size="11" text-anchor="middle">nihao</text>
+
+  <!-- 候选3 -->
+  <rect x="315" y="30" width="80" height="160" rx="4" fill="none" stroke="#ddd"/>
+  <text x="355" y="60" fill="#808080" font-size="18" text-anchor="middle">你</text>
+  <text x="355" y="88" fill="#808080" font-size="18" text-anchor="middle">号</text>
+  <text x="355" y="130" fill="#999" font-size="13" text-anchor="middle">3.</text>
+  <text x="355" y="158" fill="#999" font-size="11" text-anchor="middle">nihao</text>
+
+  <!-- candidate_spacing 标注 -->
+  <line x1="135" y1="110" x2="185" y2="110" stroke="#0d6efd" stroke-width="1.5" stroke-dasharray="4"/>
+  <text x="138" y="104" fill="#0d6efd" font-size="10" font-weight="bold">c_s</text>
+  <line x1="265" y1="110" x2="315" y2="110" stroke="#0d6efd" stroke-width="1.5" stroke-dasharray="4"/>
+  <text x="268" y="104" fill="#0d6efd" font-size="10" font-weight="bold">c_s</text>
+  <text x="60" y="212" fill="#0d6efd" font-size="11">c_s = candidate_spacing（此模式下为列间距）</text>
+
+  <!-- 方向说明 -->
+  <rect x="30" y="238" width="460" height="78" rx="4" fill="#fff" stroke="#dee2e6"/>
+  <text x="48" y="260" fill="#495057" font-size="12">vertical_text_left_to_right = <tspan font-weight="bold">false</tspan></text>
+  <text x="300" y="260" fill="#6c757d" font-size="12">→ 从右到左排列 ←</text>
+  <text x="48" y="286" fill="#495057" font-size="12">vertical_text_left_to_right = <tspan font-weight="bold">true</tspan></text>
+  <text x="300" y="286" fill="#6c757d" font-size="12">← 从左到右排列 →</text>
+  <text x="48" y="310" fill="#6c757d" font-size="11">每个候选词竖向书写，候选词之间横向排列</text>
+</svg>

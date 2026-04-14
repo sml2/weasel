@@ -54,9 +54,12 @@ void weasel::VerticalLayout::DoLayout(CDCHandle dc, PDWR pDWR) {
     int yoffset = (STATUS_ICON_SIZE >= szy && ShouldDisplayStatusIcon())
                       ? (STATUS_ICON_SIZE - szy) / 2
                       : 0;
-    _preeditRect.SetRect(real_margin_x, height + yoffset,
-                         real_margin_x + size.cx, height + yoffset + size.cy);
-    height += szy + 2 * yoffset + _style.spacing;
+    // reduce top margin for preedit area to make it more compact
+    int preedit_margin_reduction = real_margin_y / 2 + 4;
+    int preedit_y = height - preedit_margin_reduction;
+    _preeditRect.SetRect(real_margin_x, preedit_y + yoffset,
+                         real_margin_x + size.cx, preedit_y + yoffset + size.cy);
+    height = preedit_y + szy + 2 * yoffset + _style.spacing;
     width = max(width, real_margin_x * 2 + size.cx + szx);
     if (ShouldDisplayStatusIcon())
       width += STATUS_ICON_SIZE;

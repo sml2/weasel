@@ -140,6 +140,9 @@ class WeaselPanel
 
   bool hide_candidates;
   bool m_sticky;
+  // cursor position saved from _DrawPreedit for post-EndDraw rendering
+  CRect m_cursor_rc;
+  bool m_cursor_valid = false;
   // for multi font_face & font_point
   PDWR pDWR;
   std::function<void(size_t* const, size_t* const, bool* const, bool* const)>&

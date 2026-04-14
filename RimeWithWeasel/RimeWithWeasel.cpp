@@ -1,4 +1,4 @@
-﻿#include "stdafx.h"
+#include "stdafx.h"
 #include <logging.h>
 #include <RimeWithWeasel.h>
 #include <StringAlgorithm.hpp>
@@ -822,16 +822,33 @@ bool RimeWithWeaselHandler::_Respond(WeaselSessionId ipc_id, EatLine eat) {
           // no preview, fall back to composition
         }
         case UIStyle::COMPOSITION: {
+          // When cursor_color is set, remove the '‸' (U+2038) cursor marker
+          // from preedit since we draw a proper cursor line instead.
+          // The marker is 3 bytes (E2 80 B8) at the cursor position.
+          std::string preedit_str(preedit ? preedit : "");
+          int adj_start = start;
+          int adj_end = end;
+          int adj_cursor = cursor;
+          if ((session_status.style.cursor_color & 0xff000000) != 0 &&
+              adj_cursor >= 0 &&
+              adj_cursor + 2 < static_cast<int>(preedit_str.size()) &&
+              (unsigned char)preedit_str[adj_cursor] == 0xE2 &&
+              (unsigned char)preedit_str[adj_cursor + 1] == 0x80 &&
+              (unsigned char)preedit_str[adj_cursor + 2] == 0xB8) {
+            preedit_str.erase(adj_cursor, 3);
+            if (adj_start > adj_cursor) adj_start = max(adj_start - 3, adj_cursor);
+            if (adj_end > adj_cursor) adj_end = max(adj_end - 3, adj_cursor);
+          }
           body.append(L"ctx.preedit=")
-              .append(escape_string(u8tow(preedit)))
+              .append(escape_string(u8tow(preedit_str.c_str())))
               .append(L"\n");
-          if (start <= end) {
+          if (adj_start <= adj_end) {
             body.append(L"ctx.preedit.cursor=")
-                .append(u8towstring(preedit, start))
+                .append(u8towstring(preedit_str.c_str(), adj_start))
                 .append(L",")
-                .append(u8towstring(preedit, end))
+                .append(u8towstring(preedit_str.c_str(), adj_end))
                 .append(L",")
-                .append(u8towstring(preedit, cursor))
+                .append(u8towstring(preedit_str.c_str(), adj_cursor))
                 .append(L"\n");
           }
           break;
@@ -1381,6 +1398,7 @@ static bool _UpdateUIStyleColor(RimeConfig* config,
 #define COLOR(key, value, fallback) \
   _RimeGetColor(config, (prefix + "/" + key), value, fmt, fallback)
     COLOR("back_color", style.back_color, 0xffffffff);
+    COLOR("back_color_to", style.back_color_to, 0);
     COLOR("shadow_color", style.shadow_color, 0);
     COLOR("prevpage_color", style.prevpage_color, 0);
     COLOR("nextpage_color", style.nextpage_color, 0);
@@ -1411,6 +1429,9 @@ static bool _UpdateUIStyleColor(RimeConfig* config,
     COLOR("hilited_comment_text_color", style.hilited_comment_text_color,
           style.hilited_label_text_color);
     COLOR("hilited_mark_color", style.hilited_mark_color, 0);
+    COLOR("preedit_back_color", style.preedit_back_color, 0);
+    COLOR("preedit_text_color", style.preedit_text_color, 0);
+    COLOR("cursor_color", style.cursor_color, 0);
 #undef COLOR
     return true;
   }

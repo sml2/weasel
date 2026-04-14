@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <string>
 #include <vector>
@@ -273,6 +273,7 @@ struct UIStyle {
   int label_text_color;
   int comment_text_color;
   int back_color;
+  int back_color_to;
   int shadow_color;
   int border_color;
   int hilited_text_color;
@@ -287,6 +288,9 @@ struct UIStyle {
   int hilited_mark_color;
   int prevpage_color;
   int nextpage_color;
+  int preedit_back_color;
+  int preedit_text_color;
+  int cursor_color;
   // per client
   int client_caps;
   int baseline;
@@ -345,6 +349,7 @@ struct UIStyle {
         label_text_color(0),
         comment_text_color(0),
         back_color(0),
+        back_color_to(0),
         shadow_color(0),
         border_color(0),
         hilited_text_color(0),
@@ -359,6 +364,9 @@ struct UIStyle {
         hilited_mark_color(0),
         prevpage_color(0),
         nextpage_color(0),
+        preedit_back_color(0),
+        preedit_text_color(0),
+        cursor_color(0),
         baseline(0),
         linespacing(0),
         client_caps(0) {}
@@ -408,7 +416,8 @@ struct UIStyle {
         hilited_candidate_border_color != st.hilited_candidate_border_color ||
         label_text_color != st.label_text_color ||
         comment_text_color != st.comment_text_color ||
-        back_color != st.back_color || shadow_color != st.shadow_color ||
+        back_color != st.back_color || back_color_to != st.back_color_to ||
+        shadow_color != st.shadow_color ||
         border_color != st.border_color ||
         hilited_text_color != st.hilited_text_color ||
         hilited_back_color != st.hilited_back_color ||
@@ -420,7 +429,10 @@ struct UIStyle {
         hilited_comment_text_color != st.hilited_comment_text_color ||
         hilited_mark_color != st.hilited_mark_color ||
         prevpage_color != st.prevpage_color ||
-        nextpage_color != st.nextpage_color);
+        nextpage_color != st.nextpage_color ||
+        preedit_back_color != st.preedit_back_color ||
+        preedit_text_color != st.preedit_text_color ||
+        cursor_color != st.cursor_color);
   }
 };
 }  // namespace weasel
@@ -482,6 +494,7 @@ void serialize(Archive& ar, weasel::UIStyle& s, const unsigned int version) {
   ar & s.label_text_color;
   ar & s.comment_text_color;
   ar & s.back_color;
+  ar & s.back_color_to;
   ar & s.shadow_color;
   ar & s.border_color;
   ar & s.hilited_text_color;
@@ -496,6 +509,9 @@ void serialize(Archive& ar, weasel::UIStyle& s, const unsigned int version) {
   ar & s.hilited_mark_color;
   ar & s.prevpage_color;
   ar & s.nextpage_color;
+  ar & s.preedit_back_color;
+  ar & s.preedit_text_color;
+  ar & s.cursor_color;
   // per client
   ar & s.client_caps;
   ar & s.baseline;

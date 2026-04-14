@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 340" font-family="Consolas, 'Courier New', monospace" font-size="13">
+  <defs>
+    <marker id="arrow1" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="none" stroke="#555" stroke-width="1.2"/></marker>
+  </defs>
+  <!-- 外框 -->
+  <rect x="10" y="10" width="660" height="320" rx="8" fill="#f8f9fa" stroke="#adb5bd" stroke-width="1.5"/>
+  <text x="24" y="34" font-weight="bold" fill="#495057">weasel.custom.yaml</text>
+  <!-- style 区 -->
+  <rect x="30" y="50" width="620" height="195" rx="6" fill="#fff" stroke="#dee2e6"/>
+  <text x="44" y="72" font-weight="bold" fill="#0d6efd">patch/style/</text>
+  <!-- 树形条目 -->
+  <g fill="#212529">
+    <text x="58" y="98">├── <tspan fill="#6c757d">字体设置</tspan>  ─── font_face, font_point, label_*, comment_*</text>
+    <text x="58" y="120">├── <tspan fill="#6c757d">行为开关</tspan>  ─── inline_preedit, paging_on_scroll, ...</text>
+    <text x="58" y="142">├── <tspan fill="#6c757d">排列方式</tspan>  ─── horizontal, layout/type, vertical_text</text>
+    <text x="58" y="164">├── <tspan fill="#6c757d">显示格式</tspan>  ─── label_format, mark_text, preedit_type</text>
+    <text x="58" y="186">├── <tspan fill="#6c757d">配色选择</tspan>  ─── color_scheme</text>
+    <text x="58" y="208">└── <tspan fill="#0d6efd" font-weight="bold">layout/</tspan>   ─── 间距、边距、圆角、阴影</text>
+  </g>
+  <!-- color_schemes 区 -->
+  <rect x="30" y="255" width="620" height="60" rx="6" fill="#fff" stroke="#dee2e6"/>
+  <text x="44" y="278" font-weight="bold" fill="#0d6efd">patch/preset_color_schemes/</text>
+  <text x="58" y="302" fill="#212529">└── &lt;scheme_name&gt;/ ── 20+ 颜色字段</text>
+</svg>

@@ -1,0 +1,154 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 420" font-family="Consolas, 'Courier New', monospace" font-size="12">
+  <defs>
+    <marker id="arr-r" markerWidth="6" markerHeight="4" refX="5" refY="2" orient="auto"><path d="M0,0 L6,2 L0,4" fill="#dc3545"/></marker>
+    <marker id="arr-l" markerWidth="6" markerHeight="4" refX="1" refY="2" orient="auto"><path d="M6,0 L0,2 L6,4" fill="#dc3545"/></marker>
+    <marker id="arr-b" markerWidth="6" markerHeight="4" refX="5" refY="2" orient="auto"><path d="M0,0 L6,2 L0,4" fill="#0d6efd"/></marker>
+    <marker id="arr-g" markerWidth="6" markerHeight="4" refX="5" refY="2" orient="auto"><path d="M0,0 L6,2 L0,4" fill="#198754"/></marker>
+  </defs>
+
+  <!-- ════════════ 阴影层 ════════════ -->
+  <rect x="20" y="20" width="770" height="330" rx="12" fill="#00000018"/>
+
+  <!-- ════════════ 窗口外框 ════════════ -->
+  <rect x="14" y="14" width="770" height="330" rx="10" fill="#ededed" stroke="#c3c3c3" stroke-width="2"/>
+  <!-- corner_radius 标注 -->
+  <path d="M14,24 Q14,14 24,14" fill="none" stroke="#6c757d" stroke-width="1.2"/>
+  <line x1="16" y1="16" x2="4" y2="4" stroke="#6c757d" stroke-width="0.8"/>
+  <text x="0" y="2" fill="#6c757d" font-size="9" text-anchor="end">corner_radius</text>
+
+  <!-- ════════════ border 区 ════════════ -->
+  <rect x="24" y="24" width="750" height="310" rx="6" fill="none" stroke="#999" stroke-width="2" stroke-dasharray="4"/>
+
+  <!-- border 标注（右侧） -->
+  <line x1="774" y1="60" x2="790" y2="60" stroke="#dc3545" stroke-width="1"/>
+  <line x1="784" y1="24" x2="784" y2="60" stroke="#dc3545" stroke-width="1"/>
+  <line x1="774" y1="24" x2="790" y2="24" stroke="#dc3545" stroke-width="1"/>
+  <text x="792" y="46" fill="#dc3545" font-size="9">border</text>
+
+  <!-- ════════════ 内容区 (back_color) ════════════ -->
+  <rect x="34" y="34" width="730" height="290" rx="4" fill="#f5f5f5" stroke="none"/>
+
+  <!-- ════════════ margin_x 左标注 ════════════ -->
+  <line x1="34" y1="68" x2="68" y2="68" stroke="#dc3545" stroke-width="1.2" marker-end="url(#arr-r)" marker-start="url(#arr-l)"/>
+  <text x="36" y="62" fill="#dc3545" font-size="9">margin_x</text>
+
+  <!-- margin_x 右标注 -->
+  <line x1="696" y1="68" x2="764" y2="68" stroke="#dc3545" stroke-width="1.2" marker-end="url(#arr-r)" marker-start="url(#arr-l)"/>
+  <text x="710" y="62" fill="#dc3545" font-size="9">margin_x</text>
+
+  <!-- margin_y 上标注 -->
+  <line x1="400" y1="34" x2="400" y2="54" stroke="#dc3545" stroke-width="1.2"/>
+  <text x="408" y="48" fill="#dc3545" font-size="9">margin_y</text>
+
+  <!-- ════════════ Preedit 区 ════════════ -->
+  <rect x="72" y="56" width="580" height="34" rx="4" fill="#e8e8e8" stroke="#ccc"/>
+  <text x="84" y="78" fill="#808080" font-size="13">ni'hao</text>
+  <text x="164" y="78" fill="#c08000" font-size="13" font-weight="bold">[preedit]</text>
+  <text x="420" y="78" fill="#6c757d" font-size="10">text_color / hilited_*</text>
+
+  <!-- 翻页按钮（preedit 行右侧） -->
+  <rect x="660" y="56" width="50" height="34" rx="4" fill="#f0f0f0" stroke="#ccc"/>
+  <text x="670" y="78" fill="#999" font-size="15" font-weight="bold">&lt;</text>
+  <text x="694" y="78" fill="#999" font-size="15" font-weight="bold">&gt;</text>
+  <text x="656" y="52" fill="#6c757d" font-size="8">prevpage / nextpage</text>
+
+  <!-- ════════════ spacing 标注（preedit 与候选之间） ════════════ -->
+  <line x1="400" y1="90" x2="400" y2="118" stroke="#0d6efd" stroke-width="1.5"/>
+  <text x="408" y="108" fill="#0d6efd" font-size="10" font-weight="bold">spacing</text>
+
+  <!-- ════════════ 候选区（横排一行） ════════════ -->
+
+  <!-- 候选1 高亮背景 -->
+  <rect x="72" y="120" width="196" height="58" rx="5" fill="#f0e4d0" stroke="#c08000" stroke-width="1.5"/>
+
+  <!-- hilite_padding_x 左 -->
+  <line x1="72" y1="150" x2="88" y2="150" stroke="#dc3545" stroke-width="1.2" marker-end="url(#arr-r)" marker-start="url(#arr-l)"/>
+
+  <!-- mark_text -->
+  <rect x="90" y="138" width="8" height="22" rx="2" fill="#cc6600"/>
+  <text x="85" y="176" fill="#6c757d" font-size="8">mark</text>
+
+  <!-- label -->
+  <text x="106" y="155" fill="#cc6600" font-size="14" font-weight="bold">1.</text>
+
+  <!-- hilite_spacing (label ↔ text) -->
+  <line x1="128" y1="149" x2="140" y2="149" stroke="#198754" stroke-width="1.2"/>
+
+  <!-- text -->
+  <text x="142" y="155" fill="#c08000" font-size="15" font-weight="bold">你好</text>
+
+  <!-- hilite_spacing (text ↔ comment) -->
+  <line x1="186" y1="149" x2="198" y2="149" stroke="#198754" stroke-width="1.2"/>
+
+  <!-- comment -->
+  <text x="200" y="155" fill="#999" font-size="12">nihao</text>
+
+  <!-- hilite_padding_x 右 -->
+  <line x1="250" y1="150" x2="268" y2="150" stroke="#dc3545" stroke-width="1.2" marker-end="url(#arr-r)" marker-start="url(#arr-l)"/>
+
+  <!-- hilite_padding_y 上 -->
+  <line x1="280" y1="120" x2="280" y2="138" stroke="#dc3545" stroke-width="1.2"/>
+  <text x="284" y="132" fill="#dc3545" font-size="8">h_pad_y</text>
+
+  <!-- hilite_padding_y 下 -->
+  <line x1="280" y1="162" x2="280" y2="178" stroke="#dc3545" stroke-width="1.2"/>
+  <text x="284" y="174" fill="#dc3545" font-size="8">h_pad_y</text>
+
+  <!-- round_corner 标注 -->
+  <path d="M72,125 Q72,120 77,120" fill="none" stroke="#6c757d" stroke-width="1"/>
+  <line x1="74" y1="122" x2="60" y2="112" stroke="#6c757d" stroke-width="0.8"/>
+  <text x="10" y="112" fill="#6c757d" font-size="9">round_corner</text>
+
+  <!-- ─── candidate_spacing (1↔2) ─── -->
+  <line x1="268" y1="149" x2="306" y2="149" stroke="#0d6efd" stroke-width="2" stroke-dasharray="5"/>
+  <text x="270" y="142" fill="#0d6efd" font-size="10" font-weight="bold">candidate_spacing</text>
+
+  <!-- 候选2 -->
+  <rect x="308" y="120" width="170" height="58" rx="5" fill="none" stroke="#ddd" stroke-width="1.5"/>
+  <text x="322" y="155" fill="#999" font-size="14">2.</text>
+  <text x="348" y="155" fill="#808080" font-size="15">拟好</text>
+  <text x="400" y="155" fill="#999" font-size="12">nihao</text>
+
+  <!-- ─── candidate_spacing (2↔3) ─── -->
+  <line x1="478" y1="149" x2="516" y2="149" stroke="#0d6efd" stroke-width="2" stroke-dasharray="5"/>
+
+  <!-- 候选3 -->
+  <rect x="518" y="120" width="170" height="58" rx="5" fill="none" stroke="#ddd" stroke-width="1.5"/>
+  <text x="532" y="155" fill="#999" font-size="14">3.</text>
+  <text x="558" y="155" fill="#808080" font-size="15">你号</text>
+  <text x="610" y="155" fill="#999" font-size="12">nihao</text>
+
+  <!-- ════════════ 下方图例区 ════════════ -->
+
+  <!-- hilite_spacing 图例 -->
+  <line x1="72" y1="210" x2="92" y2="210" stroke="#198754" stroke-width="2"/>
+  <text x="98" y="214" fill="#198754" font-size="11" font-weight="bold">hilite_spacing</text>
+  <text x="230" y="214" fill="#6c757d" font-size="10">— label↔text↔comment 之间间距</text>
+
+  <!-- candidate_spacing 图例 -->
+  <line x1="72" y1="230" x2="92" y2="230" stroke="#0d6efd" stroke-width="2" stroke-dasharray="5"/>
+  <text x="98" y="234" fill="#0d6efd" font-size="11" font-weight="bold">candidate_spacing</text>
+  <text x="248" y="234" fill="#6c757d" font-size="10">— 候选项之间间距（横向）</text>
+
+  <!-- hilite_padding 图例 -->
+  <line x1="72" y1="250" x2="92" y2="250" stroke="#dc3545" stroke-width="2"/>
+  <text x="98" y="254" fill="#dc3545" font-size="11" font-weight="bold">hilite_padding_x / _y</text>
+  <text x="280" y="254" fill="#6c757d" font-size="10">— 高亮框与文字之间的内边距</text>
+
+  <!-- 颜色标注 -->
+  <rect x="72" y="276" width="14" height="14" rx="2" fill="#f0e4d0" stroke="#c08000"/>
+  <text x="92" y="288" fill="#6c757d" font-size="10">hilited_candidate_back_color（选中项背景）</text>
+
+  <rect x="72" y="296" width="14" height="14" rx="2" fill="#f5f5f5" stroke="#ddd"/>
+  <text x="92" y="308" fill="#6c757d" font-size="10">candidate_back_color（非选中项背景）</text>
+
+  <rect x="72" y="316" width="14" height="14" rx="2" fill="#ededed" stroke="#c3c3c3"/>
+  <text x="92" y="328" fill="#6c757d" font-size="10">back_color（窗口整体背景）</text>
+
+  <!-- margin_y 下标注 -->
+  <line x1="400" y1="310" x2="400" y2="324" stroke="#dc3545" stroke-width="1.2"/>
+  <text x="408" y="322" fill="#dc3545" font-size="9">margin_y</text>
+
+  <!-- shadow 标注 -->
+  <text x="620" y="370" fill="#6c757d" font-size="10">shadow_radius / shadow_offset_x / shadow_offset_y</text>
+</svg>

@@ -634,6 +634,12 @@ bool WeaselPanel::_DrawPreedit(const Text& text,
   bool drawn = false;
   std::wstring const& t = text.str;
   IDWriteTextFormat1* txtFormat = pDWR->pPreeditTextFormat.Get();
+  int preedit_text_clr = COLORNOTTRANSPARENT(m_style.preedit_text_color)
+                             ? m_style.preedit_text_color
+                             : m_style.text_color;
+  int hilited_preedit_clr = COLORNOTTRANSPARENT(m_style.preedit_text_color)
+                                ? m_style.preedit_text_color
+                                : m_style.hilited_text_color;
 
   if (!t.empty()) {
     weasel::TextRange range = m_layout->GetPreeditRange();
@@ -658,7 +664,7 @@ bool WeaselPanel::_DrawPreedit(const Text& text,
         else
           rc_before = CRect(x, rc.top, rc.left + beforeSz.cx, rc.bottom);
         _TextOut(rc_before, str_before.c_str(), str_before.length(),
-                 m_style.text_color, txtFormat);
+                 preedit_text_clr, txtFormat);
         if (m_style.layout_type == UIStyle::LAYOUT_VERTICAL_TEXT)
           y += beforeSz.cy + DPI_SCALE(m_style.hilite_spacing);
         else
@@ -675,7 +681,15 @@ bool WeaselPanel::_DrawPreedit(const Text& text,
         else
           rc_hi = CRect(x, rc.top, x + hilitedSz.cx, rc.bottom);
         _TextOut(rc_hi, str_highlight.c_str(), str_highlight.length(),
-                 m_style.hilited_text_color, txtFormat);
+                 hilited_preedit_clr, txtFormat);
+        // save cursor position for post-EndDraw rendering
+        if (COLORNOTTRANSPARENT(m_style.cursor_color)) {
+          if (range.cursor <= range.start)
+            m_cursor_rc = CRect(rc_hi.left, rc_hi.top, rc_hi.left, rc_hi.bottom);
+          else
+            m_cursor_rc = CRect(rc_hi.right, rc_hi.top, rc_hi.right, rc_hi.bottom);
+          m_cursor_valid = true;
+        }
         if (m_style.layout_type == UIStyle::LAYOUT_VERTICAL_TEXT)
           y += rc_hi.Height() + DPI_SCALE(m_style.hilite_spacing);
         else
@@ -690,25 +704,31 @@ bool WeaselPanel::_DrawPreedit(const Text& text,
         else
           rc_after = CRect(x, rc.top, x + afterSz.cx, rc.bottom);
         _TextOut(rc_after, str_after.c_str(), str_after.length(),
-                 m_style.text_color, txtFormat);
+                 preedit_text_clr, txtFormat);
       }
     } else {
       CRect rcText(rc.left, rc.top, rc.right, rc.bottom);
-      _TextOut(rcText, t.c_str(), t.length(), m_style.text_color, txtFormat);
+      _TextOut(rcText, t.c_str(), t.length(), preedit_text_clr, txtFormat);
+      // cursor at the beginning of preedit (no hilited range)
+      if (COLORNOTTRANSPARENT(m_style.cursor_color)) {
+        m_cursor_rc = CRect(rc.left, rc.top, rc.left, rc.bottom);
+        m_cursor_valid = true;
+      }
     }
     // draw pager mark if not inline_preedit if necessary
     if (m_candidateCount && !m_style.inline_preedit &&
         COLORNOTTRANSPARENT(m_style.prevpage_color) &&
         COLORNOTTRANSPARENT(m_style.nextpage_color)) {
-      const std::wstring pre = L"<";
-      const std::wstring next = L">";
+      const std::wstring pre = L"\x25C2";
+      const std::wstring next = L"\x25B8";
+      IDWriteTextFormat1* pagerFormat = pDWR->pLabelTextFormat.Get();
       CRect prc = m_layout->GetPrepageRect();
       // clickable color / disabled color
       int color =
           m_ctx.cinfo.currentPage ? m_style.prevpage_color : m_style.text_color;
       if (m_istorepos)
         prc.OffsetRect(0, m_offsety_preedit);
-      _TextOut(prc, pre.c_str(), pre.length(), color, txtFormat);
+      _TextOut(prc, pre.c_str(), pre.length(), color, pagerFormat);
 
       CRect nrc = m_layout->GetNextpageRect();
       // clickable color / disabled color
@@ -716,7 +736,7 @@ bool WeaselPanel::_DrawPreedit(const Text& text,
                                        : m_style.nextpage_color;
       if (m_istorepos)
         nrc.OffsetRect(0, m_offsety_preedit);
-      _TextOut(nrc, next.c_str(), next.length(), color, txtFormat);
+      _TextOut(nrc, next.c_str(), next.length(), color, pagerFormat);
     }
     drawn = true;
   }
@@ -729,7 +749,6 @@ bool WeaselPanel::_DrawPreeditBack(const Text& text,
                                    const CRect& rc) {
   bool drawn = false;
   std::wstring const& t = text.str;
-  IDWriteTextFormat1* txtFormat = pDWR->pPreeditTextFormat.Get();
 
   if (!t.empty()) {
     weasel::TextRange range = m_layout->GetPreeditRange();
@@ -986,6 +1005,7 @@ bool WeaselPanel::_DrawCandidates(CDCHandle& dc, bool back) {
 
 // draw client area
 void WeaselPanel::DoPaint(CDCHandle dc) {
+  m_cursor_valid = false;
   // turn off WS_EX_TRANSPARENT, for better resp performance
   ModifyStyleEx(WS_EX_TRANSPARENT, WS_EX_LAYERED);
   GetClientRect(&rcw);
@@ -1041,6 +1061,31 @@ void WeaselPanel::DoPaint(CDCHandle dc) {
       _HighlightText(memDC, backrc, m_style.back_color, m_style.shadow_color,
                      DPI_SCALE(m_style.round_corner_ex), BackType::BACKGROUND,
                      IsToRoundStruct(), m_style.border_color);
+      // draw gradient background (back_color → back_color_to) below separator
+      if (COLORNOTTRANSPARENT(m_style.back_color_to) &&
+          !m_layout->IsInlinePreedit() && !m_ctx.preedit.str.empty() &&
+          m_candidateCount) {
+        CRect prc_tmp = m_layout->GetPreeditRect();
+        if (m_istorepos)
+          prc_tmp.OffsetRect(0, m_offsety_preedit);
+        int grad_top = prc_tmp.bottom + DPI_SCALE(m_style.hilite_padding_y) +
+                       DPI_SCALE(m_style.spacing) / 2;
+        CRect gradrc(backrc.left, grad_top, backrc.right, backrc.bottom);
+        Gdiplus::Graphics g_grad(memDC);
+        g_grad.SetSmoothingMode(Gdiplus::SmoothingModeHighQuality);
+        // clip to rounded background path
+        GraphicsRoundRectPath bgClipPath(backrc, DPI_SCALE(m_style.round_corner_ex));
+        g_grad.SetClip(&bgClipPath);
+        Gdiplus::Color clr_from = GDPCOLOR_FROM_COLORREF(m_style.back_color);
+        Gdiplus::Color clr_to = GDPCOLOR_FROM_COLORREF(m_style.back_color_to);
+        Gdiplus::LinearGradientBrush gradBrush(
+            Gdiplus::Rect(gradrc.left, gradrc.top,
+                          gradrc.Width(), gradrc.Height()),
+            clr_from, clr_to,
+            Gdiplus::LinearGradientModeVertical);
+        g_grad.FillRectangle(&gradBrush, gradrc.left, gradrc.top,
+                             gradrc.Width(), gradrc.Height());
+      }
     }
     if (!m_ctx.aux.str.empty()) {
       if (m_istorepos)
@@ -1050,6 +1095,24 @@ void WeaselPanel::DoPaint(CDCHandle dc) {
     if (!m_layout->IsInlinePreedit() && !m_ctx.preedit.str.empty()) {
       if (m_istorepos)
         preeditrc.OffsetRect(0, m_offsety_preedit);
+      // draw preedit independent background color (entire area above separator)
+      if (COLORNOTTRANSPARENT(m_style.preedit_back_color) && m_candidateCount) {
+        CRect contentrc_bg = m_layout->GetContentRect();
+        CRect prc_sep = m_layout->GetPreeditRect();
+        if (m_istorepos)
+          prc_sep.OffsetRect(0, m_offsety_preedit);
+        int sep_y = prc_sep.bottom + DPI_SCALE(m_style.hilite_padding_y) +
+                    DPI_SCALE(m_style.spacing) / 2;
+        CRect preedit_bgrc(contentrc_bg.left, contentrc_bg.top, contentrc_bg.right, sep_y);
+        Gdiplus::Graphics g_preedit_bg(memDC);
+        g_preedit_bg.SetSmoothingMode(Gdiplus::SmoothingModeHighQuality);
+        GraphicsRoundRectPath bgClipPath(contentrc_bg, DPI_SCALE(m_style.round_corner_ex));
+        g_preedit_bg.SetClip(&bgClipPath);
+        Gdiplus::Color preedit_bg_clr = GDPCOLOR_FROM_COLORREF(m_style.preedit_back_color);
+        Gdiplus::SolidBrush preedit_bg_brush(preedit_bg_clr);
+        g_preedit_bg.FillRectangle(&preedit_bg_brush, preedit_bgrc.left, preedit_bgrc.top,
+                                   preedit_bgrc.Width(), preedit_bgrc.Height());
+      }
       drawn |= _DrawPreeditBack(m_ctx.preedit, memDC, preeditrc);
     }
     if (m_candidateCount)
@@ -1077,6 +1140,57 @@ void WeaselPanel::DoPaint(CDCHandle dc) {
       Refresh();
     }
     // end texts drawing
+
+    // draw cursor line after EndDraw (GDI+ on memDC, not inside DirectWrite)
+    if (m_cursor_valid && COLORNOTTRANSPARENT(m_style.cursor_color)) {
+      Gdiplus::Graphics g_cursor(memDC);
+      Gdiplus::Color cursor_clr = GDPCOLOR_FROM_COLORREF(m_style.cursor_color);
+      int cursor_padding = DPI_SCALE(4);
+      Gdiplus::Pen cursor_pen(cursor_clr, (Gdiplus::REAL)DPI_SCALE(1));
+      if (m_style.layout_type == UIStyle::LAYOUT_VERTICAL_TEXT)
+        g_cursor.DrawLine(&cursor_pen, m_cursor_rc.left + cursor_padding, m_cursor_rc.bottom,
+                          m_cursor_rc.right - cursor_padding, m_cursor_rc.bottom);
+      else
+        g_cursor.DrawLine(&cursor_pen, m_cursor_rc.left, m_cursor_rc.top + cursor_padding + 2,
+                          m_cursor_rc.left, m_cursor_rc.bottom - cursor_padding + 2);
+      m_cursor_valid = false;
+    }
+
+    // draw separator line between preedit and candidates
+    if (!m_layout->IsInlinePreedit() && !m_ctx.preedit.str.empty() &&
+        m_candidateCount && COLORNOTTRANSPARENT(m_style.border_color)) {
+      CRect contentrc = m_layout->GetContentRect();
+      CRect prc = m_layout->GetPreeditRect();
+      if (m_istorepos)
+        prc.OffsetRect(0, m_offsety_preedit);
+      int sep_y = prc.bottom + DPI_SCALE(m_style.hilite_padding_y) +
+                  DPI_SCALE(m_style.spacing) / 2;
+      Gdiplus::Graphics g_sep(memDC);
+      g_sep.SetSmoothingMode(Gdiplus::SmoothingModeHighQuality);
+      Gdiplus::Color sep_clr = GDPCOLOR_FROM_COLORREF(m_style.border_color);
+      Gdiplus::Pen sep_pen(sep_clr, (Gdiplus::REAL)1);
+      g_sep.DrawLine(&sep_pen,
+                     contentrc.left, sep_y,
+                     contentrc.right, sep_y);
+      // draw vertical line to the LEFT of ◂ prevpage button in preedit row
+      if (COLORNOTTRANSPARENT(m_style.prevpage_color) &&
+          COLORNOTTRANSPARENT(m_style.nextpage_color)) {
+        CRect prepagerc = m_layout->GetPrepageRect();
+        if (m_istorepos)
+          prepagerc.OffsetRect(0, m_offsety_preedit);
+        int vline_x = prepagerc.left - DPI_SCALE(m_style.hilite_padding_x);
+        int vline_full_top = prc.top - DPI_SCALE(m_style.hilite_padding_y);
+        int vline_bottom = sep_y;
+        int vline_height = vline_bottom - vline_full_top;
+        int vline_top = vline_full_top + vline_height / 3;
+        DWORD orig_a = (m_style.border_color >> 24) & 0xff;
+        DWORD half_a = orig_a / 2;
+        COLORREF vline_color = (half_a << 24) | (m_style.border_color & 0x00ffffff);
+        Gdiplus::Color vline_clr = GDPCOLOR_FROM_COLORREF(vline_color);
+        Gdiplus::Pen vline_pen(vline_clr, (Gdiplus::REAL)DPI_SCALE(1));
+        g_sep.DrawLine(&vline_pen, vline_x, vline_top, vline_x, vline_bottom);
+      }
+    }
 
     // status icon (I guess Metro IME stole my idea :)
     if (m_layout->ShouldDisplayStatusIcon()) {
