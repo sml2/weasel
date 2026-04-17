@@ -30,21 +30,53 @@ AppContainer 进程（UWP 应用）启动时，Windows 的 `msctf.dll`（TSF 客
 4. `TextInputHost.exe`（Modern Input Stack 宿主）未加载任何第三方 IME DLL
 5. Weasel 已注册 `GUID_TFCAT_TIPCAP_IMMERSIVESUPPORT`（`{13A016DF}`），但这不足以绕过 AppContainer 的 DLL 注入限制
 
-### 解决方案方向：OOP TSF（Out-Of-Process TSF）
+### 解决方案方向：Modern Input Stack（OOP TSF）
 
-Windows 提供了 **Modern Input Stack / OOP TSF** 机制，允许第三方 IME 通过 `TextInputHost.exe` 代理为 UWP 应用提供输入服务，无需将 DLL 注入到 AppContainer 进程中。
+Windows 提供了 **Modern Input Stack** 机制，允许第三方 IME 通过 `TextInputHost.exe` 代理为 UWP 应用提供输入服务，无需将 DLL 注入到 AppContainer 进程。
 
-**实现要求（架构级改造）：**
-- 将输入逻辑迁移为进程外服务，由 `TextInputHost.exe` 调用
-- 实现 `ITfFnGetPreferredTouchKeyboardLayout` 等 Modern Input Stack 接口
-- 参考微软拼音、日文 IME 等系统内置 IME 的实现方式
+#### 逆向工程发现（通过分析 imjptip.dll / TextInput.dll / windowsudk.shellcommon.dll）
 
-**注意事项：**
-- 微软拼音等系统 IME 注册了额外的 Category（如 `{3AF314A2-D79F-4B1B-9992-15086D339B05}`），该 GUID 不可随意注册到 Weasel，否则会导致系统所有新进程的输入法失效（已验证）
-- 这是架构级改造，工作量较大，暂不实现
+**架构路径：**
+```
+UWP 应用 (AppContainer)
+  └─ msctf.dll (TSF 客户端，不注入第三方 DLL)
+       └─ windows.ui.core.textinput.dll
+            └─ TextInputHost.exe (Modern Input Stack 宿主)
+                  └─ TextInput.dll / InputApp.dll (WinRT 组件)
+                       └─ Windows.UI.Internal.Text.Core.CoreTextSystemInputProcessor
+                            └─ 各语言 SIPEndPoint (ChsInputProcessorForSIPEndPoint 等)
+```
+
+**核心接口（均为未文档化的内部 WinRT 接口）：**
+- `Windows.UI.Internal.Text.Core.CoreTextSystemInputProcessor` — IME 注册到 TextInputHost 的核心接口
+- `Windows.UI.Internal.Text.Core.CoreTextEditViewJunction` — 文本编辑视图桥接
+- `Windows.UI.Internal.Text.Core.CoreKeyboardInputProfileManager` — 键盘输入配置管理
+- `WindowsUdk.UI.Input.Text.KnownInputProcessorIds` — 已知输入处理器 ID 枚举
+- `WindowsUdk.UI.Input.Text.TextInputSession` / `TextInputProfileManager` — 输入会话管理
+- `WindowsInternal.ComposableShell.Experiences.TextInputUndocked.TextFramework.ISystemInputProcessor` — 系统输入处理器接口
+
+**各语言内置 IME 的 SIPEndPoint 类（实现了上述接口）：**
+- `ChsInputProcessorForSIPEndPoint` — 微软拼音（简体中文）
+- `ChtInputProcessorForSIPEndPoint` — 微软注音（繁体中文）
+- `JpnInputProcessorEndpointForSip` — 日文 IME
+
+**关键辅助库：**
+- `ime_textinputhelpers.dll` — 系统 IME 辅助库（字典加载、安装任务），9个无名导出函数（按序号调用），第三方无法使用
+
+**重要结论：**
+1. Modern Input Stack 完全基于**未公开的内部 WinRT 接口**，不是标准 COM/TSF 接口
+2. `msctf.dll` 中没有任何 OOP TSF 桥接代码，两套架构完全独立
+3. 系统 IME 通过 `CoreTextSystemInputProcessor` 接口向 `TextInputHost` 注册，这套接口对第三方完全封闭
+4. `{3AF314A2-D79F-4B1B-9992-15086D339B05}` Category 是系统 IME 使用 Modern Input Stack 的标志，**不可随意注册**（已验证会导致系统输入法全部失效）
+
+**实现难点：**
+- 所有核心接口均为 `Windows.UI.Internal.*` 和 `WindowsInternal.*` 命名空间，微软明确标注为内部接口，无公开文档
+- 需要完整逆向 `windows.ui.core.textinput.dll`（1.4MB）和 `windowsudk.shellcommon.dll`（6.2MB）的 WinRT vtable 布局
+- 即使逆向成功，微软随时可能在系统更新中修改接口，维护成本极高
+- 这是架构级改造，工作量巨大，暂不实现
 
 ### 状态
 
-- **发现日期：** 2025年
+- **发现日期：** 2026年
 - **Windows 版本：** Windows 11 25H2（Build 26220）及以上
 - **状态：** 已知限制，暂不修复，待日后研究 OOP TSF 实现
