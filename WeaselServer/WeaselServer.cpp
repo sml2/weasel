@@ -62,6 +62,9 @@ static int RunEmbedding() {
     return -1;
   }
 
+  // 标准 OOP COM Server 生命周期：先 AddRef，再注册工厂，再 Resume
+  CoAddRefServerProcess();
+
   DWORD dwRegToken = 0;
   hr = CoRegisterClassObject(clsidWeaselTSF, pFactory,
                              CLSCTX_LOCAL_SERVER,
@@ -69,9 +72,13 @@ static int RunEmbedding() {
   pFactory->Release();
 
   if (FAILED(hr)) {
+    CoReleaseServerProcess();
     FreeLibrary(hDll);
     return -1;
   }
+
+  // 告知 COM 框架 server 已就绪，可开始接受外部激活请求
+  CoResumeClassObjects();
 
   // 消息循环：等待 COM 调用完成后系统通知退出
   MSG msg;
@@ -81,6 +88,7 @@ static int RunEmbedding() {
   }
 
   CoRevokeClassObject(dwRegToken);
+  CoReleaseServerProcess();
   FreeLibrary(hDll);
   return 0;
 }

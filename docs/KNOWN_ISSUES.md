@@ -30,103 +30,166 @@ AppContainer 进程（UWP 应用）启动时，Windows 的 `msctf.dll`（TSF 客
 4. `TextInputHost.exe`（Modern Input Stack 宿主）未加载任何第三方 IME DLL
 5. Weasel 已注册 `GUID_TFCAT_TIPCAP_IMMERSIVESUPPORT`（`{13A016DF}`），但这不足以绕过 AppContainer 的 DLL 注入限制
 
-### 解决方案方向：Modern Input Stack（OOP TSF）
+### 解决方案方向：TSF3 / GIP / OOP TSF 深度逆向研究
 
-Windows 提供了 **Modern Input Stack** 机制，允许第三方 IME 通过 `TextInputHost.exe` 代理为 UWP 应用提供输入服务，无需将 DLL 注入到 AppContainer 进程。
+#### 一、整体架构（本次逆向确认）
 
-#### 逆向工程发现（通过分析 imjptip.dll / TextInput.dll / windowsudk.shellcommon.dll）
+Windows 对 UWP 输入的处理分为两条平行路径：
 
-**架构路径：**
 ```
+【旧路径 - Win32 InProc TSF】
+Win32 应用
+  └─ msctf.dll (usesLegacyImplementation=true)
+       └─ InProcServer32 → weaselx64.dll (直接注入，正常工作)
+
+【新路径 - TSF3 / GIP / OOP】
 UWP 应用 (AppContainer)
-  └─ msctf.dll (TSF 客户端，不注入第三方 DLL)
-       └─ windows.ui.core.textinput.dll
-            └─ TextInputHost.exe (Modern Input Stack 宿主)
-                  └─ TextInput.dll / InputApp.dll (WinRT 组件)
-                       └─ Windows.UI.Internal.Text.Core.CoreTextSystemInputProcessor
-                            └─ 各语言 SIPEndPoint (ChsInputProcessorForSIPEndPoint 等)
+  └─ msctf.dll (usesLegacyImplementation=false，不注入第三方 DLL)
+       └─ TextInputFramework.dll (ALPC 客户端)
+            └─[ALPC]→ TextInputHost.exe (非 AppContainer，ALPC 服务端)
+                  └─ tsf3gip.dll (GIP = Global Input Processor，mtfadapter)
+                       ├─ ClassicTsf 路径 → InProc 加载白名单内的 IME DLL
+                       └─ ModernTsf 路径 → ChsIME.exe / ChtIME.exe (OOP + MTF 接口)
 ```
 
-**核心接口（均为未文档化的内部 WinRT 接口）：**
-- `Windows.UI.Internal.Text.Core.CoreTextSystemInputProcessor` — IME 注册到 TextInputHost 的核心接口
-- `Windows.UI.Internal.Text.Core.CoreTextEditViewJunction` — 文本编辑视图桥接
-- `Windows.UI.Internal.Text.Core.CoreKeyboardInputProfileManager` — 键盘输入配置管理
-- `WindowsUdk.UI.Input.Text.KnownInputProcessorIds` — 已知输入处理器 ID 枚举
-- `WindowsUdk.UI.Input.Text.TextInputSession` / `TextInputProfileManager` — 输入会话管理
-- `WindowsInternal.ComposableShell.Experiences.TextInputUndocked.TextFramework.ISystemInputProcessor` — 系统输入处理器接口
+`MSCTF.dll` 内部有 `usesLegacyImplementation` 字段，控制走哪条路径：
+- 无 `{3AF314A2}` Category → `usesLegacyImplementation=true` → InProc（Win32 正常）
+- 有 `{3AF314A2}` Category → `usesLegacyImplementation=false` → OOP/TSF3
 
-**各语言内置 IME 的 SIPEndPoint 类（实现了上述接口）：**
-- `ChsInputProcessorForSIPEndPoint` — 微软拼音（简体中文）
-- `ChtInputProcessorForSIPEndPoint` — 微软注音（繁体中文）
-- `JpnInputProcessorEndpointForSip` — 日文 IME
+#### 二、MSCTF.dll 硬编码白名单（关键发现）
 
-**关键辅助库：**
-- `ime_textinputhelpers.dll` — 系统 IME 辅助库（字典加载、安装任务），9个无名导出函数（按序号调用），第三方无法使用
+**`MSCTF.dll` 内部 offset `0x146324` 存在一个硬编码的 IME 结构体数组**，每项 48 字节（`CLSID` + `LangProfileGUID` + `Flags`），完整列表如下：
 
-**重要结论：**
-1. Modern Input Stack 完全基于**未公开的内部 WinRT 接口**，不是标准 COM/TSF 接口
-2. `msctf.dll` 中没有任何 OOP TSF 桥接代码，两套架构完全独立
-3. 系统 IME 通过 `CoreTextSystemInputProcessor` 接口向 `TextInputHost` 注册，这套接口对第三方完全封闭
-4. `{3AF314A2-D79F-4B1B-9992-15086D339B05}` Category 是系统 IME 使用 Modern Input Stack 的标志，**不可随意注册**（已验证会导致系统输入法全部失效）
-
-**实现难点：**
-- 所有核心接口均为 `Windows.UI.Internal.*` 和 `WindowsInternal.*` 命名空间，微软明确标注为内部接口，无公开文档
-- 需要完整逆向 `windows.ui.core.textinput.dll`（1.4MB）和 `windowsudk.shellcommon.dll`（6.2MB）的 WinRT vtable 布局
-- 即使逆向成功，微软随时可能在系统更新中修改接口，维护成本极高
-- 这是架构级改造，工作量巨大，暂不实现
-
-#### 搜狗输入法逆向分析结论
-
-通过逆向分析搜狗输入法（SogouTSF.dll / ImeFunc.dll / SGMyInput.exe / UIPlugin.dll）：
-
-- 搜狗**不是 TSF IME**，而是 **IMM32 传统 IME + CUAS 兼容层**
-- `SogouTSF.dll`：纯 COM 注册壳，只有 4 个标准导出，**无 msctf.dll 依赖**
-- `SGMyInput.exe`：主程序，用 `ImmInstallIME()` 注册 `.ime` 文件，走传统 IMM32 路径
-- 所有搜狗 DLL 均无 `msctf.dll`、`windows.ui.core.textinput.dll`、`WindowsUdk` 等 Modern Input Stack 依赖
-- **CUAS**（CTF IME Compatibility Architecture）是 Windows 内置兼容层，负责把 IMM32 IME 包装成 TSF TIP，但在 AppContainer 沙箱中完全失效
-- **结论：搜狗在 UWP/AppContainer 应用中同样无法使用**，这是行业普遍问题，不是 Weasel 特有缺陷
-
-#### OOP TSF 真实机制（逆向 ChsIME.exe 发现）
-
-**微软拼音的 OOP 实现方式已通过逆向确认：**
-
-```
-# 注册表：
-HKLM\SOFTWARE\Classes\CLSID\{81d4e9c9}\LocalServer32
-    = C:\Windows\System32\InputMethod\CHS\ChsIME.exe   ← 独立进程！
-
-# 对比 Weasel：
-HKLM\SOFTWARE\Classes\CLSID\{A3F4CDED}\InprocServer32
-    = D:\Rime\weasel-0.17.4\weaselx64.dll              ← DLL 注入
-```
-
-**关键区别：**
-
-| | 微软拼音/五笔 | 日文/韩文 IME | Weasel |
+| CLSID | 名称 | 类型 | 说明 |
 |---|---|---|---|
-| COM 注册方式 | `LocalServer32`（独立进程） | `InProcServer32`（DLL） | `InProcServer32`（DLL） |
-| UWP/AppContainer | ✅ 支持 | ❌ 不支持 | ❌ 不支持 |
-| 注册 `{3AF314A2}` | ✅ 有 | ✅ 有 | ❌ 无（加了会崩溃） |
+| `{531FDEBF}` | CImeServerCht | LocalServer32 | 繁中 ChtIME.exe |
+| `{B115690A}` | CImeServerCht | LocalServer32 | 繁中 ChtIME.exe（备用） |
+| `{03B5835F}` | IMJPTIP | InProcServer32 | 日语 imjptip.dll |
+| `{A028AE76}` | IMKRTIP | InProcServer32 | 韩语 imkrtip.dll |
+| `{A1E2B86B}` | IMKROTIP | InProcServer32 | 韩语旧版 imkrotip.dll |
+| `{81D4E9C9}` | CImeServerChs | LocalServer32 | 简中 ChsIME.exe |
+| `{6A498709}` | CImeServerChs | LocalServer32 | 简中 ChsIME.exe（备用） |
 
-**上次加 `{3AF314A2}` 导致崩溃的真正原因：**
-系统看到该 Category 后，会尝试以 OOP（`LocalServer32`）方式激活 Weasel，但 Weasel 没有注册 `LocalServer32`，COM 激活失败，导致所有进程的输入法激活链断裂。
+**这个白名单只包含微软自家 IME，对第三方完全封闭。** 通过注册表添加 Weasel CLSID 到 `Tsf3Override` 无效，MSCTF 不读取白名单之外的项目。
 
-**ChsIME.exe 的 OOP 工作流程：**
-1. 用 `-Embedding` 参数启动（标准 OOP COM Server 模式）
-2. 通过 `CoRegisterClassObject` 向 COM 注册自身
-3. 接收来自 AppContainer 进程的跨进程 COM 调用（TSF 接口）
-4. 输入处理结果通过 COM 回调传回 AppContainer 进程
+与该数组配套，`MSCTF.dll` 同一段还硬编码了这些 IME 的字符串形式 CLSID（用于注册表查询），并在运行时将匹配结果写入 `HKCU\Software\Microsoft\Input\TSF\Tsf3Override\{CLSID}` 作为系统预置缓存。
 
-**Weasel 实现 OOP TSF 的最小可行路径：**
-1. 将 `WeaselServer.exe`（已有）注册为 `LocalServer32`
-2. 在 `WeaselServer.exe` 中实现 `ITfTextInputProcessor` 等 TSF 接口（OOP 模式）
-3. 注册 `{3AF314A2}` Category（中文系还需 `{74769EE9}`）
-4. `weaselx64.dll` 的 `InProcServer32` 保留用于普通 Win32 应用
+#### 三、TSF3 / GIP 架构详解（逆向 tsf3gip.dll）
 
-这比之前估计的**难度大幅降低**：不需要实现 WinRT 内部接口，只需在现有 `WeaselServer.exe` 上扩展标准 TSF COM 接口，走 `LocalServer32` OOP 路径即可。
+`tsf3gip.dll`（GIP = Global Input Processor）是连接 `TextInputHost.exe` 和具体 IME 的桥接层，内部有 `mtfadapter`（MTF = Modern Text Framework）。
+
+**tsf3gip.dll 内部 IME 类型枚举：**
+- `Imm` — 旧版 IMM32 IME
+- `System` — 系统内置 WinRT IME（BopomofoIme、JapaneseIme，完全 WinRT 路径）
+- `ClassicTsf` — 传统 InProc TSF IME（日文/韩文走此路径，在 TextInputHost 内 InProc 加载）
+- `ModernTsf` — 现代 OOP TSF（ChsIME.exe/ChtIME.exe，WinRT 激活工厂 + MTF 接口）
+- `Unknown`
+
+**注册表辅助控制：**
+- `HKCU\Software\Microsoft\Input\TSF\Tsf3Override\{CLSID}` — 系统写入，标记白名单内 IME 已激活 TSF3
+- `HKLM\Software\Microsoft\Input\TSF\Tsf3Override` — 无（系统级只在 HKCU）
+- `noTsf3Override` / `NoTsf3Override1~5` — 内部调试/策略标志
+
+#### 四、ChsIME.exe 的 ModernTsf OOP 机制（逆向确认）
+
+微软拼音（ChsIME.exe）不是简单的 `ITfTextInputProcessor` OOP，而是实现了完整的 WinRT 激活工厂 + MTF 接口：
+
+**导入函数（dumpbin 验证）：**
+- `RoRegisterActivationFactories` / `RoRevokeActivationFactories` — 注册 WinRT 工厂
+- `CoAddRefServerProcess` / `CoReleaseServerProcess` / `CoResumeClassObjects` — 标准 OOP COM Server 生命周期
+- `CoRegisterClassObject` / `CoRevokeClassObject` — COM 类注册
+- `TF_GetShowFloatingStatus` / `TF_SetShowFloatingStatus` — 仅用这两个 MSCTF 函数，**不初始化 ThreadMgr**
+- `RtlSubscribeWnfStateChangeNotification` — WNF（Windows Notification Facility）状态订阅
+
+**关键字符串（strings 确认）：**
+```
+Windows.Desktop.TextInput.ChsIme   ← ChsIME 自己注册的 WinRT 激活工厂名
+```
+
+**工作流程：**
+1. 系统以 `-Embedding` 参数启动 `ChsIME.exe`
+2. `CoAddRefServerProcess()` → `CoRegisterClassObject()` → `CoResumeClassObjects()`
+3. `RoRegisterActivationFactories("Windows.Desktop.TextInput.ChsIme", ...)` 注册 WinRT 工厂
+4. `tsf3gip.dll` 的 `mtfadapter` 通过 WinRT 工厂激活 ChsIME，调用 MTF 接口
+5. 输入结果通过 ALPC 回传给 UWP 应用
+
+#### 五、第一版 OOP 实现失败原因（已排查）
+
+| 失败点 | 原因 |
+|---|---|
+| Win32 记事本输入失效 | 注册 `{3AF314A2}` 后 MSCTF 全局切换到 OOP 路径，但我们的 `-Embedding` 进程未正确就绪 |
+| `-Embedding` 进程无 MSCTF | `RunEmbedding` 只做了 `CoRegisterClassObject`，缺少 `CoAddRefServerProcess` + `CoResumeClassObjects` |
+| UWP 仍无输入 | 即使 OOP Server 正确，Weasel CLSID 不在 MSCTF 硬编码白名单，TSF3 路径不会激活 Weasel |
+
+**已修复：** `WeaselServer.cpp` 的 `RunEmbedding()` 已补全正确的 OOP COM Server 生命周期调用（`CoAddRefServerProcess` + `CoResumeClassObjects` + `CoReleaseServerProcess`）。`LocalServer32` 也已注册。`{3AF314A2}` Category 因白名单问题暂不启用。
+
+#### 六、TextInputFramework.dll 的 ALPC 通信机制
+
+`TextInputFramework.dll` 使用 ALPC（高级本地过程调用）端口在 UWP 进程和 `TextInputHost.exe` 之间传递输入事件：
+
+- `TextInputServerCreate` / `TextInputServerCreateEx` — TextInputHost 侧（ALPC server）
+- `TextInputClientCreate` / `TextInputClientCreate2` — UWP 应用侧（ALPC client）
+- `TextInputHostGetForHwnd` — Win32 侧根据 HWND 获取 Host
+- `TsfOneCreate` — TSF One 统一适配层
+
+ALPC 端口名如 `Input\Core.AlpcPort\Server`、`Input\Public.AlpcPort\Server` 等。
+
+#### 七、globinputhost.dll 的 IME 识别
+
+`globinputhost.dll`（WGI = Windows Globalization Input）负责枚举和识别输入法，关键导出：
+- `WGIIsImmersiveInputMethod(CLSID)` — 判断某个 IME 是否支持 UWP（Immersive）输入
+- `WGIGetCompatibleInputMethodsForLanguage` — 获取语言可用的输入法列表
+- `WGIGetDefaultInputMethodForLanguage` — 获取默认输入法
+
+该函数的判断依据是 `CTF\TIP` 注册表中的 Language Profile 信息，**不单独检查 `{3AF314A2}`**，但最终激活时仍受 MSCTF 白名单约束。
+
+#### 八、搜狗等第三方 IME 的 UWP 支持分析
+
+> ⚠️ **对先前文档中"搜狗走 IMM32 路径"的更正**
+>
+> 之前基于旧版搜狗逆向得出的结论（IMM32 + CUAS 兼容层）不适用于现代版本的搜狗 TSF。以下为更准确的分析。
+
+**当前结论（基于 MSCTF 白名单机制的推断）：**
+
+1. **搜狗 CLSID 不在 MSCTF.dll 硬编码白名单中**（已通过字节搜索验证）
+2. 将 Weasel CLSID 加入 `Tsf3Override` 注册表后，TextInputHost 仍未加载 weaselx64.dll（已实验验证），说明注册表可扩展，但激活仍受白名单约束
+3. 第三方 IME 若要真正支持 AppContainer（便笺等），理论上需要绕过白名单，可能的方式：
+   - **Runtime Hook/Patch**：在运行时 Hook MSCTF 的白名单检查函数（高风险，反病毒可能误报）
+   - **只支持"伪 UWP"**：Win11 新版记事本等 MSIX 打包应用并非完整 AppContainer，仍可 InProc 加载 TSF DLL，第三方 IME 在此场景下可正常工作
+   - **用微软内部渠道申请白名单**：理论上可行，实际无此公开流程
+
+**实验验证：** 把 Weasel 加入 `Tsf3Override` + 注册 `{3AF314A2}` 后，便笺仍无法使用 Weasel，且 Win32 记事本输入中断（MSCTF 全局切换 OOP 路径但白名单激活失败）。`{3AF314A2}` 已回滚。
+
+**结论：** 搜狗若声称支持"便笺"等真正的 AppContainer 应用，其机制尚未完全明确；若只支持 Win11 新记事本，则与 Weasel 当前能力相同（Win32 InProc）。这不是 Weasel 特有缺陷，而是微软对第三方 IME 的架构性封锁。
+
+#### 九、OOP TSF 实现的可行性评估（当前状态）
+
+**已完成：**
+- ✅ `WeaselServer.exe` 注册了 `LocalServer32`（`Register.cpp`）
+- ✅ `RunEmbedding()` 实现了正确的 OOP COM Server 生命周期
+- ✅ `GUID_TFCAT_TIPCAP_LOCALSERVER32`（`{3AF314A2}`）和 `GUID_TFCAT_TIPCAP_CHINESE`（`{74769EE9}`）的 GUID 定义已添加（`Globals.h/cpp`）
+- ✅ `{3AF314A2}` Category 在 `Register.cpp` 中预留（注释状态，随时可启用）
+
+**阻塞点：**
+- ❌ MSCTF.dll 硬编码白名单无法通过注册表绕过，需要更深入的方案（Hook 或其他）
+- ❌ 即使绕过白名单，ChsIME 走的是 MTF（Modern Text Framework）+ WinRT 激活工厂路径，而非标准 `ITfTextInputProcessor` OOP，Weasel 尚未实现 MTF 接口
+
+**下一步研究方向：**
+1. 研究 `tsf3gip.dll` 中 `ClassicTsf` 路径的完整 COM 接口协议（日韩 IME 走此路径，可能不需要 MTF）
+2. 确认 `ClassicTsf` 路径是否也受白名单约束，或白名单仅对 `ModernTsf` 有效
+3. 评估 Detours/MinHook 方案在 MSCTF 白名单函数上的可行性
+
+### 当前代码状态
+
+| 文件 | 改动 | 状态 |
+|---|---|---|
+| `WeaselTSF/Register.cpp` | 添加 `LocalServer32` 注册；`{3AF314A2}` 在注释中预留 | ✅ 已部署 |
+| `WeaselTSF/Globals.h/cpp` | 添加 `{3AF314A2}` 和 `{74769EE9}` GUID 定义 | ✅ 已部署 |
+| `WeaselServer/WeaselServer.cpp` | `RunEmbedding()` 补全 `CoAddRefServerProcess` + `CoResumeClassObjects` | ✅ 已部署 |
 
 ### 状态
 
-- **发现日期：** 2026年
-- **Windows 版本：** Windows 11 25H2（Build 26220）及以上
-- **状态：** 已知限制，暂不修复，待日后研究 OOP TSF 实现
+- **首次发现日期：** 2024年
+- **深度逆向研究：** 2025年（TSF3/GIP/MSCTF 白名单）
+- **Windows 版本：** Windows 11 23H2+（Build 22631+）
+- **状态：** 阻塞于 MSCTF 硬编码白名单，待研究绕过方案
