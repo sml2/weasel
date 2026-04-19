@@ -18,6 +18,73 @@
 #pragma comment(lib, "Shcore.lib")
 CAppModule _Module;
 
+// OOP TSF: WeaselServer.exe 作为 LocalServer32 OOP COM Server 运行
+// 当系统以 -Embedding 参数启动时进入此模式（AppContainer/UWP 支持）
+static int RunEmbedding() {
+  // 获取 WeaselServer.exe 所在目录，加载同目录的 weaselx64.dll
+  WCHAR szPath[MAX_PATH];
+  GetModuleFileNameW(NULL, szPath, MAX_PATH);
+  WCHAR* pSlash = wcsrchr(szPath, L'\\');
+  if (!pSlash)
+    return -1;
+
+#ifdef _M_ARM64
+  wcscpy_s(pSlash + 1, MAX_PATH - (pSlash + 1 - szPath), L"weaselARM64.dll");
+#else
+  wcscpy_s(pSlash + 1, MAX_PATH - (pSlash + 1 - szPath), L"weaselx64.dll");
+#endif
+
+  HMODULE hDll = LoadLibraryW(szPath);
+  if (!hDll)
+    return -1;
+
+  typedef HRESULT(STDAPICALLTYPE * FnDllGetClassObject)(REFCLSID, REFIID,
+                                                        void**);
+  auto fnGetClassObject =
+      (FnDllGetClassObject)GetProcAddress(hDll, "DllGetClassObject");
+  if (!fnGetClassObject) {
+    FreeLibrary(hDll);
+    return -1;
+  }
+
+  // Weasel TSF CLSID: {A3F4CDED-B1E9-41EE-9CA6-7B4D0DE6CB0A}
+  static const CLSID clsidWeaselTSF = {
+      0xa3f4cded,
+      0xb1e9,
+      0x41ee,
+      {0x9c, 0xa6, 0x7b, 0x4d, 0x0d, 0xe6, 0xcb, 0x0a}};
+
+  IClassFactory* pFactory = nullptr;
+  HRESULT hr =
+      fnGetClassObject(clsidWeaselTSF, IID_IClassFactory, (void**)&pFactory);
+  if (FAILED(hr) || !pFactory) {
+    FreeLibrary(hDll);
+    return -1;
+  }
+
+  DWORD dwRegToken = 0;
+  hr = CoRegisterClassObject(clsidWeaselTSF, pFactory,
+                             CLSCTX_LOCAL_SERVER,
+                             REGCLS_MULTIPLEUSE, &dwRegToken);
+  pFactory->Release();
+
+  if (FAILED(hr)) {
+    FreeLibrary(hDll);
+    return -1;
+  }
+
+  // 消息循环：等待 COM 调用完成后系统通知退出
+  MSG msg;
+  while (GetMessage(&msg, NULL, 0, 0)) {
+    TranslateMessage(&msg);
+    DispatchMessage(&msg);
+  }
+
+  CoRevokeClassObject(dwRegToken);
+  FreeLibrary(hDll);
+  return 0;
+}
+
 int WINAPI _tWinMain(HINSTANCE hInstance,
                      HINSTANCE /*hPrevInstance*/,
                      LPTSTR lpstrCmdLine,
@@ -61,6 +128,15 @@ int WINAPI _tWinMain(HINSTANCE hInstance,
 
   hRes = _Module.Init(NULL, hInstance);
   ATLASSERT(SUCCEEDED(hRes));
+
+  // OOP TSF: COM 以 -Embedding 参数启动时，作为 LocalServer32 OOP COM Server
+  if (!wcscmp(L"-Embedding", lpstrCmdLine) ||
+      !wcscmp(L"/Embedding", lpstrCmdLine)) {
+    int nRet = RunEmbedding();
+    _Module.Term();
+    ::CoUninitialize();
+    return nRet;
+  }
 
   if (!wcscmp(L"/userdir", lpstrCmdLine)) {
     CreateDirectory(WeaselUserDataPath().c_str(), NULL);

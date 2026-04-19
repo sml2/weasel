@@ -8,6 +8,7 @@
 static const char c_szInfoKeyPrefix[] = "CLSID\\";
 static const char c_szTipKeyPrefix[] = "Software\\Microsft\\CTF\\TIP\\";
 static const char c_szInProcSvr32[] = "InprocServer32";
+static const char c_szLocalSvr32[] = "LocalServer32";
 static const char c_szModelName[] = "ThreadingModel";
 
 HKL FindIME(LANGID langid) {
@@ -115,7 +116,8 @@ const GUID SupportCategories0[] = {
     GUID_TFCAT_TIPCAP_SYSTRAYSUPPORT, GUID_TFCAT_PROP_AUDIODATA,
     GUID_TFCAT_PROP_INKDATA, GUID_TFCAT_PROPSTYLE_CUSTOM,
     GUID_TFCAT_PROPSTYLE_STATIC, GUID_TFCAT_PROPSTYLE_STATICCOMPACT,
-    GUID_TFCAT_DISPLAYATTRIBUTEPROVIDER, GUID_TFCAT_DISPLAYATTRIBUTEPROPERTY};
+    GUID_TFCAT_DISPLAYATTRIBUTEPROVIDER, GUID_TFCAT_DISPLAYATTRIBUTEPROPERTY,
+    GUID_TFCAT_TIPCAP_LOCALSERVER32, GUID_TFCAT_TIPCAP_CHINESE};
 
 BOOL RegisterCategories() {
   CComPtr<ITfCategoryMgr> pCategoryMgr = NULL;
@@ -236,6 +238,29 @@ BOOL RegisterServer() {
                              sizeof TEXTSERVICE_MODEL) == ERROR_SUCCESS;
       RegCloseKey(hSubKey);
     }
+
+    // Register LocalServer32 for OOP TSF (AppContainer/UWP support)
+    // WeaselServer.exe lives in the same directory as the DLL
+    {
+      char achServerPath[MAX_PATH];
+      GetModuleFileNameA(g_hInst, achServerPath, ARRAYSIZE(achServerPath));
+      // Replace DLL filename with WeaselServer.exe
+      char* pLastSlash = strrchr(achServerPath, '\\');
+      if (pLastSlash) {
+        StringCbCopyA(pLastSlash + 1,
+                      MAX_PATH - (pLastSlash + 1 - achServerPath),
+                      "WeaselServer.exe");
+      }
+      HKEY hSvrKey;
+      if (RegCreateKeyExA(hKey, c_szLocalSvr32, 0, NULL,
+                          REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hSvrKey,
+                          &dw) == ERROR_SUCCESS) {
+        RegSetValueExA(hSvrKey, NULL, 0, REG_SZ, (BYTE*)achServerPath,
+                       (strlen(achServerPath) + 1) * sizeof(char));
+        RegCloseKey(hSvrKey);
+      }
+    }
+
     RegCloseKey(hKey);
   }
   return fRet;
