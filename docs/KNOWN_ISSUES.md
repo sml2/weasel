@@ -75,6 +75,17 @@ UWP 应用 (AppContainer)
 - 即使逆向成功，微软随时可能在系统更新中修改接口，维护成本极高
 - 这是架构级改造，工作量巨大，暂不实现
 
+#### 搜狗输入法逆向分析结论
+
+通过逆向分析搜狗输入法（SogouTSF.dll / ImeFunc.dll / SGMyInput.exe / UIPlugin.dll）：
+
+- 搜狗**不是 TSF IME**，而是 **IMM32 传统 IME + CUAS 兼容层**
+- `SogouTSF.dll`：纯 COM 注册壳，只有 4 个标准导出，**无 msctf.dll 依赖**
+- `SGMyInput.exe`：主程序，用 `ImmInstallIME()` 注册 `.ime` 文件，走传统 IMM32 路径
+- 所有搜狗 DLL 均无 `msctf.dll`、`windows.ui.core.textinput.dll`、`WindowsUdk` 等 Modern Input Stack 依赖
+- **CUAS**（CTF IME Compatibility Architecture）是 Windows 内置兼容层，负责把 IMM32 IME 包装成 TSF TIP，但在 AppContainer 沙箱中完全失效
+- **结论：搜狗在 UWP/AppContainer 应用中同样无法使用**，这是行业普遍问题，不是 Weasel 特有缺陷
+
 ### 状态
 
 - **发现日期：** 2026年
