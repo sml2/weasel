@@ -86,6 +86,45 @@ UWP 应用 (AppContainer)
 - **CUAS**（CTF IME Compatibility Architecture）是 Windows 内置兼容层，负责把 IMM32 IME 包装成 TSF TIP，但在 AppContainer 沙箱中完全失效
 - **结论：搜狗在 UWP/AppContainer 应用中同样无法使用**，这是行业普遍问题，不是 Weasel 特有缺陷
 
+#### OOP TSF 真实机制（逆向 ChsIME.exe 发现）
+
+**微软拼音的 OOP 实现方式已通过逆向确认：**
+
+```
+# 注册表：
+HKLM\SOFTWARE\Classes\CLSID\{81d4e9c9}\LocalServer32
+    = C:\Windows\System32\InputMethod\CHS\ChsIME.exe   ← 独立进程！
+
+# 对比 Weasel：
+HKLM\SOFTWARE\Classes\CLSID\{A3F4CDED}\InprocServer32
+    = D:\Rime\weasel-0.17.4\weaselx64.dll              ← DLL 注入
+```
+
+**关键区别：**
+
+| | 微软拼音/五笔 | 日文/韩文 IME | Weasel |
+|---|---|---|---|
+| COM 注册方式 | `LocalServer32`（独立进程） | `InProcServer32`（DLL） | `InProcServer32`（DLL） |
+| UWP/AppContainer | ✅ 支持 | ❌ 不支持 | ❌ 不支持 |
+| 注册 `{3AF314A2}` | ✅ 有 | ✅ 有 | ❌ 无（加了会崩溃） |
+
+**上次加 `{3AF314A2}` 导致崩溃的真正原因：**
+系统看到该 Category 后，会尝试以 OOP（`LocalServer32`）方式激活 Weasel，但 Weasel 没有注册 `LocalServer32`，COM 激活失败，导致所有进程的输入法激活链断裂。
+
+**ChsIME.exe 的 OOP 工作流程：**
+1. 用 `-Embedding` 参数启动（标准 OOP COM Server 模式）
+2. 通过 `CoRegisterClassObject` 向 COM 注册自身
+3. 接收来自 AppContainer 进程的跨进程 COM 调用（TSF 接口）
+4. 输入处理结果通过 COM 回调传回 AppContainer 进程
+
+**Weasel 实现 OOP TSF 的最小可行路径：**
+1. 将 `WeaselServer.exe`（已有）注册为 `LocalServer32`
+2. 在 `WeaselServer.exe` 中实现 `ITfTextInputProcessor` 等 TSF 接口（OOP 模式）
+3. 注册 `{3AF314A2}` Category（中文系还需 `{74769EE9}`）
+4. `weaselx64.dll` 的 `InProcServer32` 保留用于普通 Win32 应用
+
+这比之前估计的**难度大幅降低**：不需要实现 WinRT 内部接口，只需在现有 `WeaselServer.exe` 上扩展标准 TSF COM 接口，走 `LocalServer32` OOP 路径即可。
+
 ### 状态
 
 - **发现日期：** 2026年
